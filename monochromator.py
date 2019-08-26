@@ -1,9 +1,11 @@
 #%%
-import datetime
-import tkinter as tk
-from datetime.datetime import today
+from time import localtime
+def today():
+    t = localtime()
+    return "{0}{1:0>2}{2:0>2}-{3:0>2}{4:0>2}{5:0>2}".format(str(t.tm_year)[-2:],t.tm_mon,t.tm_mday,t.tm_hour,t.tm_min,t.tm_sec)
 from ctypes import c_long, c_buffer, c_float, windll, pointer
 import os
+import numpy as np
 #%%
 
 class APTMotor():
@@ -221,15 +223,16 @@ class Monochromator:
     def __init__(self,reset=True,SerialNum=20808447, HWTYPE=13, loc='C:/Users/vanschej/Documents/Python Scripts/PyAPT/',verbose=False, dllname='APT.dll'):
         self.mot = APTMotor(SerialNum=SerialNum, HWTYPE=HWTYPE, loc=loc,verbose=verbose, dllname=dllname)
         self.reset_calibration()
-        self.set_lower_bound(90)
+        self.set_lower_bound(10)
         if reset:
             self.go_home()
         
-    def go_home()
+    def go_home(self):
         self.mot.go_home()
         self.move(self.lower_bound+5)
     
     def move(self,mm):
+#        print(mm)
         self.mot.mbAbs(mm)
         
     def set_lower_bound(self,mm):
@@ -238,27 +241,30 @@ class Monochromator:
     def reset_calibration(self):
         self.__calibration = [[],[],[]]
         
-    def add_point(self,wave,fwhm):
-        self.__calibration[0].append(self.mot.getPos())
+    def add_point(self,pos,wave,fwhm):
+        self.__calibration[0].append(pos)
         self.__calibration[1].append(wave)
         self.__calibration[2].append(fwhm)
         
     def create_calibration(self):
         self.__b=np.sum((np.array(self.__calibration[1])-np.mean(self.__calibration[1]))*(np.array(self.__calibration[0])-np.mean(self.__calibration[0])))/np.sum((np.array(self.__calibration[1])-np.mean(self.__calibration[1]))**2)
         self.__a=np.mean(self.__calibration[0])-self.__b*np.mean(self.__calibration[1])
-        self.__monoBound = [np.ceil((self.lower_bound-self.__a)/self.__b),np.floor((self.lower_bound+31-self.__a)/self.__b)]
+        self.__monoBound = [np.ceil((self.lower_bound-self.__a)/self.__b),np.floor((self.lower_bound-31-self.__a)/self.__b)]
     
     def save_calibration_points(self,path_to_folder):
         self.create_calibration()
-        f = open(os.path.join([path_to_folder,str(today())+".cal"]),"w")
+        oldD = os.getcwd()
+        os.chdir(path_to_folder)
+        f = open(today()+".cal","w")
         for c in self.__calibration:
             f.write(",".join([str(cc) for cc in c])+"\n")
         f.write("{0},{1},{2},{3}\n".format(self.__b,self.__a,*self.__monoBound))
         f.close()
+        os.chdir(oldD)
 
     def load_calibration_points(self,file):
         f = open(file)
-        calibrationPoints = [[float(ll) for ll in l.strip("\n").split("\n")] for l in f]
+        calibrationPoints = [[float(ll) for ll in l.strip("\n").split(",")] for l in f]
         check_old = np.array(calibrationPoints.pop())
         self.reset_calibration()
         for p,w,f in zip(*calibrationPoints):

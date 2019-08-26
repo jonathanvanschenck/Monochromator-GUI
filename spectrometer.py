@@ -27,8 +27,8 @@ class selectionBox(tk.LabelFrame):
 class Spectrometer(sb.Spectrometer):
     def __init__(self):
         def scan():
-            return ["1","2"]#sb.list_devices()
-        deviceList = []#scan()
+            return sb.list_devices()
+        deviceList = scan()
         if len(deviceList) == 1:
             sb.Spectrometer.__init__(self,deviceList[0])
         else:
