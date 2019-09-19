@@ -1,8 +1,43 @@
+"""Allows pyseabreeze spectrometers to be loaded via a popup window
+---Classes---
+selectionBox:
+    A tk widget to hold a list of tk.Radiobuttons which all refer to the same variable
+    
+Spectrometer:
+    A wrapper for the seabreeze.spectrometer.Spectrometer class, which automatically
+    searches for available OceanOptics spectrometers. If multiple devices (or no
+    devices) are available, the software launches a tk window to list the options.
+   
+Created by: Jonathan D. B. Van Schenck
+"""
+
 #%%
 import tkinter as tk
 import seabreeze.spectrometers as sb
 #%%
 class selectionBox(tk.LabelFrame):
+    '''Container for associated tk.Radiobuttons
+    ---Initialization Parameters---
+        master: tk.Frame instance into which the widget will be created
+        variable: The underlying tk variable which all the Radiobuttons 
+                    will be attached to
+        valueList: List of possible values for which tk.Radiobuttons will
+                    be created
+        label: Optional Label for the tk.LabelFrame which wraps the radiobuttons
+        textList: Optional list of labels to represent each valueList (must be either
+                   the same length as valueList, or None).
+    ---Variables---
+    variable:
+        The underlying tk variable which all the Radiobuttons will be attached to
+       
+    RBList:
+        List to hold each tk.Radiobutton instance
+       
+    ---Methods---
+    gen_list:
+        Generates and packs the tk.Radiobuttons into a tk.LabelFrame
+    
+    '''
     def __init__(self,master,variable,valueList,label="",textList=None):
         tk.LabelFrame.__init__(self,master,text=label)
         self.variable = variable
@@ -25,6 +60,13 @@ class selectionBox(tk.LabelFrame):
 
 
 class Spectrometer(sb.Spectrometer):
+    """Wrapper for seabreeze.spectrometer.Spectrometer class with smart inialization and popup window
+    ---Initialization Variables---
+    
+    ---Variables---
+    
+    ---Methods---
+    """
     def __init__(self):
         def scan():
             return sb.list_devices()
