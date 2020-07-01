@@ -9,6 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 from scipy.optimize import minimize
+
 def gauss(x,p):
     return np.abs(p[0])+np.abs(p[1])*np.exp(-((x-p[2])/p[3])**2)
 
@@ -38,34 +39,20 @@ class APTMotor():
         '''
 
         self.verbose = verbose
-#        print(1)
         self.Connected = False
-#        print(2)
         if not os.path.exists(loc+dllname):
-#            print(3)
             print("ERROR: DLL not found")
-#        print(4)
         self.aptdll = windll.LoadLibrary(loc+dllname)
-#        print(5)
         self.aptdll.EnableEventDlg(True)
-#        print(6)
         self.aptdll.APTInit()
-#        print(7)
-        #print('APT initialized'
         self.HWType = c_long(HWTYPE)
-#        print(8)
         self.blCorr = 0.10 #100um backlash correction
-#        print(9)
         if SerialNum is not None:
-#            print(10)
             if self.verbose: print("Serial is", SerialNum)
-#            print(11)
             self.SerialNum = c_long(SerialNum)
-#            print(12)
             self.initializeHardwareDevice()
         # TODO : Error reporting to know if initialisation went sucessfully or not.
         else:
-#            print(13)
             if self.verbose: print("No serial, please setSerialNumber")
 
     def getNumberOfHardwareUnits(self):
@@ -236,31 +223,31 @@ class Monochromator:
         self.set_lower_bound(10)
         if reset:
             self.go_home()
-        
+
     def go_home(self):
         self.mot.go_home()
         self.move(self.lower_bound+5)
-    
+
     def move(self,mm):
 #        print(mm)
         self.mot.mbAbs(mm)
-        
+
     def set_lower_bound(self,mm):
         self.lower_bound = mm
-    
+
     def reset_calibration(self):
         self.__calibration = [[],[],[]]
-        
+
     def add_point(self,pos,wave,fwhm):
         self.__calibration[0].append(pos)
         self.__calibration[1].append(wave)
         self.__calibration[2].append(fwhm)
-        
+
     def create_calibration(self):
         self.__b=np.sum((np.array(self.__calibration[1])-np.mean(self.__calibration[1]))*(np.array(self.__calibration[0])-np.mean(self.__calibration[0])))/np.sum((np.array(self.__calibration[1])-np.mean(self.__calibration[1]))**2)
         self.__a=np.mean(self.__calibration[0])-self.__b*np.mean(self.__calibration[1])
         self.__monoBound = [np.ceil((self.lower_bound-self.__a)/self.__b),np.floor((self.lower_bound-31-self.__a)/self.__b)]
-    
+
     def save_calibration_points(self,path_to_folder):
         self.create_calibration()
         oldD = os.getcwd()
@@ -282,7 +269,7 @@ class Monochromator:
         self.create_calibration()
         check_new = np.append([self.__b,self.__a],self.__monoBound)
         return np.all(np.abs(check_old-check_new)/check_old < 0.1)
-    
+
     def get_pos(self,lam):
         res = self.__a+self.__b*lam
         #assert res>=iniPos and res<=iniPos+31
@@ -290,10 +277,10 @@ class Monochromator:
 
     def go_to_wave(self,lam):
         self.move(self.get_pos(lam))
-        
+
     def shutdown(self):
         self.mot.cleanUpAPT()
-            
+
 class Calibrate(tk.Frame):
     def __init__(self,monochromator):
         tk.Frame.__init__(self,None)
@@ -307,7 +294,7 @@ class Calibrate(tk.Frame):
         self.start_aquisition()
         self.mainloop()
         self.spec.close()
-        
+
     def create_widgets(self):
         # Create MPL Figure
         self.mpl = MPL(self.master,
@@ -315,7 +302,7 @@ class Calibrate(tk.Frame):
                        #np.arange(0,100,0.1),gauss(np.arange(0,100,0.1),[200,2700,40,5]),
                        #self.spec.wavelengths,self.spec.intensities,
                        column=0,row=2,columnspan=2)
-        
+
         # Create Spectrometer control window
         self.specFrame = tk.LabelFrame(self.master,text="Spectrometer Controls")
         self.specFrame.grid(column=0,row=0)
@@ -338,7 +325,7 @@ class Calibrate(tk.Frame):
         self.pauseButton = tk.Button(self.specFrame,text="Pause",
                                     command=lambda: self.stop_aquisition())
         self.pauseButton.grid(column=2,row=1)
-        
+
         # Create calibration setup
         self.calFrame = tk.LabelFrame(self.master,text="Spectrometer Controls")
         self.calFrame.grid(column=1,row=0)
@@ -370,8 +357,8 @@ class Calibrate(tk.Frame):
                                     command = lambda: self.next_position())
         self.nextButton.grid(column=1,row=2)
         self.nextButton.config(state='disabled')
-        
-        
+
+
     def set_IT(self,IT):
         try:
             it = int(IT)*1000
@@ -384,7 +371,7 @@ class Calibrate(tk.Frame):
         self.spec.integration_time_micros(it)
         self.ITvariable.set(str(it//1000))
         self.mpl.update_spectrum(self.spec.intensities())
-    
+
     def set_Pos(self,POS):
         try:
             pos = int(POS)
@@ -397,20 +384,20 @@ class Calibrate(tk.Frame):
         self.mono.set_lower_bound(pos)
         self.Posvariable.set(str(pos))
         self.mono.move(self.mono.lower_bound)
-        
+
     def start_aquisition(self):
         self.specRunning = True
         self.aquire()
-    
+
     def aquire(self):
 #        y = self.mpl.spectrum.get_ydata()
         self.mpl.update_spectrum(self.spec.intensities())#(0.99*y)
         if self.specRunning:
             self.master.after(0,self.aquire)
-            
+
     def stop_aquisition(self):
         self.specRunning = False
-        
+
     def start_calibration(self):
         self.stop_aquisition()
         self.playButton.config(state="disabled")
@@ -431,7 +418,7 @@ class Calibrate(tk.Frame):
         sleep(0.1)
         self.mpl.update_spectrum(self.spec.intensities())
         self.mpl.gen_fit()
-        
+
     def next_position(self):
         self.mono.add_point(self.mono.mot.getPos(),*self.mpl.p[-2:])
         try:
@@ -444,23 +431,23 @@ class Calibrate(tk.Frame):
             sleep(0.1)
             self.mpl.update_spectrum(self.spec.intensities())
             self.mpl.gen_fit()
-        
-    
+
+
     def save_calibration_file(self):
         path = filedialog.askdirectory(initialdir = os.getcwd(),
                                       title= "Calibration File Directory")
         self.mono.save_calibration_points(path)
-    
-    
+
+
 class MPL:
     def __init__(self,master,x,y,p=[0,0,500,5],**kwargs):
         self.x = x
         self.p = np.array(p)
-        
+
         # Create tk Frame to hold MPL plot
         self.frame = tk.Frame(master)
         self.frame.grid(**kwargs)
-        
+
         # Create MPL figure
         self.fig = plt.figure(figsize=(10,5))
         self.ax = self.fig.add_subplot(111)
@@ -468,19 +455,19 @@ class MPL:
         self.ax.set_xlabel("Wavelength (nm)")
         self.ax.set_ylabel("Counts")
         self.ax.set_ylim(0,4000)
-        
+
         # Attached MPL figure and toolbar to tk Frame
         self.canvas = FigureCanvasTkAgg(self.fig,self.frame)
         self.canvas.get_tk_widget().pack()
         self.toolbar = NavigationToolbar2Tk(self.canvas,self.frame)
         self.toolbar.update()
-        
+
         # initialize fit
         self.fit, = self.ax.plot(x,gauss(x,self.p),color="black")
-        
+
         # Setup MPL click collbacks
         self.canvas.mpl_connect('button_press_event',self.click)
-        
+
     def click(self,event):
         if event.inaxes == self.ax:
             if event.button == 1:
@@ -492,15 +479,15 @@ class MPL:
             if event.button == 3:
                 print("Right click @ x=",event.xdata," y=",event.ydata)
                 self.gen_fit()
-    
+
     def update_fit(self):
         self.fit.set_ydata(gauss(self.x,self.p))
         self.fig.canvas.draw()
-        
+
     def update_spectrum(self,y):
         self.spectrum.set_ydata(y)
         self.fig.canvas.draw()
-        
+
     def gen_fit(self):
         y = self.spectrum.get_ydata()
         x0 = self.x[np.argmax(y)]
@@ -512,7 +499,7 @@ class MPL:
 #        print(fit)
         self.p = np.copy(fit.x)
         self.update_fit()
-        
+
 #%
 class selectionBox(tk.LabelFrame):
     def __init__(self,master,variable,valueList,label="",textList=None):
@@ -520,8 +507,8 @@ class selectionBox(tk.LabelFrame):
         self.variable = variable
         self.RBList = []
         self.gen_list(valueList,textList)
-        
-        
+
+
     def gen_list(self,valueList,textList=None):
         for rb in self.RBList:
             rb.destroy()
